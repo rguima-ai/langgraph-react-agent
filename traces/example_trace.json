@@ -1,0 +1,68 @@
+{
+  "thread_id": "cliente-102-demo",
+  "note": "Ejemplo legible. Ejecutá el proyecto para generar traces/latest_trace.json con una traza real.",
+  "events": [
+    {
+      "position": 1,
+      "phase": "user_input",
+      "content": "¿Cuántos pedidos tiene el cliente 102 y cuál es el total acumulado?"
+    },
+    {
+      "position": 2,
+      "phase": "reason_and_tool_call",
+      "tool": "search_knowledge_base",
+      "args": {
+        "query": "cantidad de pedidos del cliente 102",
+        "limit": 1
+      }
+    },
+    {
+      "position": 3,
+      "phase": "tool_observation",
+      "result": "El cliente 102 tiene 3 pedidos confirmados."
+    },
+    {
+      "position": 4,
+      "phase": "reason_and_tool_call",
+      "tool": "search_knowledge_base",
+      "args": {
+        "query": "total acumulado de pedidos del cliente 102",
+        "limit": 1
+      }
+    },
+    {
+      "position": 5,
+      "phase": "tool_observation",
+      "result": "El total acumulado de los pedidos del cliente 102 es 14500 ARS."
+    },
+    {
+      "position": 6,
+      "phase": "final_answer",
+      "content": "El cliente 102 tiene 3 pedidos por un total acumulado de 14.500 ARS."
+    },
+    {
+      "position": 7,
+      "phase": "user_input",
+      "content": "¿Y cuál fue el último?"
+    },
+    {
+      "position": 8,
+      "phase": "reason_and_tool_call",
+      "tool": "search_knowledge_base",
+      "args": {
+        "query": "último pedido del cliente 102",
+        "limit": 1
+      }
+    },
+    {
+      "position": 9,
+      "phase": "tool_observation",
+      "result": "El último pedido del cliente 102 es PED-9003, del 15/09/2026, por 6500 ARS."
+    },
+    {
+      "position": 10,
+      "phase": "final_answer",
+      "content": "El último fue el pedido PED-9003, del 15/09/2026, por 6.500 ARS."
+    }
+  ]
+}
