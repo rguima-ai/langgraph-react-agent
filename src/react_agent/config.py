@@ -4,6 +4,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, SecretStr
 
+PLACEHOLDER_API_KEY = "replace_with_your_openai_api_key"
+
 
 class ConfigurationError(RuntimeError):
     """Falta o es inválida una variable de entorno necesaria."""
@@ -26,7 +28,7 @@ class Settings(BaseModel):
         import os
 
         api_key = os.getenv("OPENAI_API_KEY", "").strip()
-        if not api_key:
+        if not api_key or api_key == PLACEHOLDER_API_KEY:
             raise ConfigurationError(
                 "Falta OPENAI_API_KEY. Copiá .env.example como .env y agregá tu clave."
             )

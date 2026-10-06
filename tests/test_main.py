@@ -15,9 +15,18 @@ from react_agent.graph import build_graph
 FAKE_KEY = "sk-test-no-es-una-clave-real"
 
 
+def _isolate_from_dotenv(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Evita que un .env real del desarrollador active llamadas pagas durante los tests."""
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(main_module, "load_dotenv", lambda *args, **kwargs: False)
+    for name in ("OPENAI_MODEL", "CHECKPOINT_DB_PATH", "TRACE_OUTPUT_PATH", "THREAD_ID"):
+        monkeypatch.delenv(name, raising=False)
+
+
 @pytest.fixture
 def demo_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    monkeypatch.chdir(tmp_path)
+    _isolate_from_dotenv(tmp_path, monkeypatch)
     monkeypatch.setenv("OPENAI_API_KEY", FAKE_KEY)
     monkeypatch.setenv("THREAD_ID", "demo-test")
     monkeypatch.setattr(main_module, "ChatOpenAI", lambda **_: ScriptedModel())
@@ -54,11 +63,16 @@ async def test_main_runs_twice_and_traces_only_the_current_execution(
     assert len(humans) == 4
 
 
+@pytest.mark.parametrize("api_key", [None, "replace_with_your_openai_api_key"])
 def test_run_reports_missing_api_key(
+    api_key: str | None,
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    _isolate_from_dotenv(tmp_path, monkeypatch)
+    if api_key is None:
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    else:
+        monkeypatch.setenv("OPENAI_API_KEY", api_key)
 
     with pytest.raises(SystemExit) as exit_info:
         main_module.run()

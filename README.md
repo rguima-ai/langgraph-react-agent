@@ -75,7 +75,8 @@ langgraph-react-agent/
 │   ├── test_main.py    # Demo completa sin red
 │   └── test_tools.py   # Validación y errores controlados
 ├── traces/
-│   └── example_trace.json
+│   ├── example_trace.json   # Ejemplo ilustrativo del formato
+│   └── real_run_trace.json  # Ejecución real con gpt-4.1-mini
 ├── docs/
 │   └── resumen-modulo-5.html
 ├── MASTER_PROMPT_CLAUDE_CODE.md
@@ -256,6 +257,11 @@ repositorio con el mismo formato que genera `save_trace()`. Al ejecutar el progr
 - `tool_observation`: resultado local de la herramienta.
 - `final_answer`: respuesta final del agente.
 
+[`traces/real_run_trace.json`](traces/real_run_trace.json) es una ejecución real con
+`gpt-4.1-mini` y la base vacía: el agente hizo dos búsquedas secuenciales (cantidad y total)
+antes de responder la primera pregunta y, con el mismo `thread_id`, resolvió “¿Y cuál fue el
+último?” como una pregunta sobre el cliente 102.
+
 No se guarda el razonamiento privado del modelo. La traza registra decisiones observables,
 argumentos, resultados y respuestas, que es lo necesario para auditar el flujo.
 
@@ -273,7 +279,7 @@ argumentos, resultados y respuestas, que es lo necesario para auditar el flujo.
 - [x] Prueba de memoria: segunda pregunta ambigua con el mismo `thread_id`.
 - [x] Errores de herramienta convertidos en observaciones (timeout, conexión, validación).
 - [x] `recursion_limit` para evitar ciclos infinitos.
-- [x] Traza de ejemplo en JSON.
+- [x] Traza de ejemplo y traza de una ejecución real en JSON.
 - [x] API keys excluidas del repositorio.
 
 ## Nota sobre producción
