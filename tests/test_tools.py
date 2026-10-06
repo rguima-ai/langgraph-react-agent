@@ -5,6 +5,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
+from react_agent import tools as tools_module
 from react_agent.tools import SearchInput, search_knowledge_base
 
 
@@ -34,3 +35,24 @@ async def test_search_tool_converts_timeout_into_a_controlled_error() -> None:
 
     assert result["status"] == "error"
     assert result["error_type"] == "TimeoutError"
+
+
+@pytest.mark.asyncio
+async def test_search_tool_converts_connection_error_into_a_controlled_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def unreachable(query: str, k: int) -> list[dict[str, object]]:
+        raise ConnectionError("sin conexión")
+
+    monkeypatch.setattr(tools_module.db, "similarity_search", unreachable)
+    result = json.loads(
+        await search_knowledge_base.ainvoke({"query": "cliente 102", "limit": 1})
+    )
+
+    assert result["status"] == "error"
+    assert result["error_type"] == "ConnectionError"
+
+
+def test_search_input_rejects_a_too_short_query() -> None:
+    with pytest.raises(ValidationError):
+        SearchInput(query="ab", limit=1)

@@ -16,7 +16,7 @@ from react_agent.tools import TOOLS
 class ToolBindableModel(Protocol):
     """Interfaz mínima que permite usar ChatOpenAI o un modelo falso en tests."""
 
-    def bind_tools(self, tools: Sequence[Any]) -> Any: ...
+    def bind_tools(self, tools: Sequence[Any], **kwargs: Any) -> Any: ...
 
 
 class AgentState(MessagesState):
@@ -45,7 +45,8 @@ def build_graph(
 ) -> CompiledStateGraph[AgentState, None, Any, Any]:
     """Construye y compila el ciclo agent -> tools -> agent."""
 
-    model_with_tools = model.bind_tools(TOOLS)
+    # Una tool call por turno: cada dato independiente recorre su propio ciclo ReAct.
+    model_with_tools = model.bind_tools(TOOLS, parallel_tool_calls=False)
 
     async def call_model(state: AgentState) -> dict[str, list[BaseMessage]]:
         """Pide al LLM que responda o que genere una llamada de herramienta."""

@@ -1,68 +1,107 @@
 {
+  "note": "EJEMPLO ilustrativo con el mismo formato que genera save_trace(). Las respuestas del modelo están redactadas a mano; las observaciones son salidas reales de la herramienta. Ejecutá el proyecto para obtener traces/latest_trace.json.",
   "thread_id": "cliente-102-demo",
-  "note": "Ejemplo legible. Ejecutá el proyecto para generar traces/latest_trace.json con una traza real.",
+  "generated_at": "2026-10-05T00:00:00+00:00",
+  "event_count": 10,
   "events": [
     {
       "position": 1,
-      "phase": "user_input",
-      "content": "¿Cuántos pedidos tiene el cliente 102 y cuál es el total acumulado?"
+      "message_type": "human",
+      "content": "¿Cuántos pedidos tiene el cliente 102 y cuál es el total acumulado?",
+      "phase": "user_input"
     },
     {
       "position": 2,
+      "message_type": "ai",
+      "content": "",
       "phase": "reason_and_tool_call",
-      "tool": "search_knowledge_base",
-      "args": {
-        "query": "cantidad de pedidos del cliente 102",
-        "limit": 1
-      }
+      "tool_calls": [
+        {
+          "name": "search_knowledge_base",
+          "args": {
+            "query": "cantidad de pedidos del cliente 102",
+            "limit": 1
+          },
+          "id": "call_example_1",
+          "type": "tool_call"
+        }
+      ]
     },
     {
       "position": 3,
+      "message_type": "tool",
+      "content": "{\"status\": \"success\", \"query\": \"cantidad de pedidos del cliente 102\", \"results\": [{\"id\": \"cliente-102-cantidad\", \"content\": \"El cliente 102 tiene 3 pedidos confirmados.\", \"score\": 4}], \"message\": \"Usá solo estos datos. Si falta otro dato, hacé otra búsqueda.\"}",
       "phase": "tool_observation",
-      "result": "El cliente 102 tiene 3 pedidos confirmados."
+      "tool_name": "search_knowledge_base",
+      "tool_call_id": "call_example_1"
     },
     {
       "position": 4,
+      "message_type": "ai",
+      "content": "",
       "phase": "reason_and_tool_call",
-      "tool": "search_knowledge_base",
-      "args": {
-        "query": "total acumulado de pedidos del cliente 102",
-        "limit": 1
-      }
+      "tool_calls": [
+        {
+          "name": "search_knowledge_base",
+          "args": {
+            "query": "total acumulado de pedidos del cliente 102",
+            "limit": 1
+          },
+          "id": "call_example_2",
+          "type": "tool_call"
+        }
+      ]
     },
     {
       "position": 5,
+      "message_type": "tool",
+      "content": "{\"status\": \"success\", \"query\": \"total acumulado de pedidos del cliente 102\", \"results\": [{\"id\": \"cliente-102-total\", \"content\": \"El total acumulado de los pedidos del cliente 102 es 14500 ARS.\", \"score\": 5}], \"message\": \"Usá solo estos datos. Si falta otro dato, hacé otra búsqueda.\"}",
       "phase": "tool_observation",
-      "result": "El total acumulado de los pedidos del cliente 102 es 14500 ARS."
+      "tool_name": "search_knowledge_base",
+      "tool_call_id": "call_example_2"
     },
     {
       "position": 6,
-      "phase": "final_answer",
-      "content": "El cliente 102 tiene 3 pedidos por un total acumulado de 14.500 ARS."
+      "message_type": "ai",
+      "content": "El cliente 102 tiene 3 pedidos confirmados por un total acumulado de 14.500 ARS [cliente-102-cantidad, cliente-102-total].",
+      "phase": "final_answer"
     },
     {
       "position": 7,
-      "phase": "user_input",
-      "content": "¿Y cuál fue el último?"
+      "message_type": "human",
+      "content": "¿Y cuál fue el último?",
+      "phase": "user_input"
     },
     {
       "position": 8,
+      "message_type": "ai",
+      "content": "",
       "phase": "reason_and_tool_call",
-      "tool": "search_knowledge_base",
-      "args": {
-        "query": "último pedido del cliente 102",
-        "limit": 1
-      }
+      "tool_calls": [
+        {
+          "name": "search_knowledge_base",
+          "args": {
+            "query": "último pedido del cliente 102",
+            "limit": 1
+          },
+          "id": "call_example_3",
+          "type": "tool_call"
+        }
+      ]
     },
     {
       "position": 9,
+      "message_type": "tool",
+      "content": "{\"status\": \"success\", \"query\": \"último pedido del cliente 102\", \"results\": [{\"id\": \"cliente-102-ultimo\", \"content\": \"El último pedido del cliente 102 es PED-9003, del 15/09/2026, por 6500 ARS.\", \"score\": 4}], \"message\": \"Usá solo estos datos. Si falta otro dato, hacé otra búsqueda.\"}",
       "phase": "tool_observation",
-      "result": "El último pedido del cliente 102 es PED-9003, del 15/09/2026, por 6500 ARS."
+      "tool_name": "search_knowledge_base",
+      "tool_call_id": "call_example_3"
     },
     {
       "position": 10,
-      "phase": "final_answer",
-      "content": "El último fue el pedido PED-9003, del 15/09/2026, por 6.500 ARS."
+      "message_type": "ai",
+      "content": "El último pedido del cliente 102 es PED-9003, del 15/09/2026, por 6.500 ARS [cliente-102-ultimo].",
+      "phase": "final_answer"
     }
   ]
 }

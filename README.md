@@ -11,10 +11,14 @@ un `thread_id`.
 - **Autonomía:** el modelo elige si necesita `search_knowledge_base`; no hay rutas manuales
   basadas en el texto del usuario.
 - **Ciclo ReAct:** `tools_condition` devuelve el flujo a la herramienta o finaliza el grafo.
-- **Razonamiento multi-paso:** la primera pregunta necesita dos búsquedas independientes.
+- **Razonamiento multi-paso:** la primera pregunta necesita dos búsquedas independientes;
+  con `bind_tools(..., parallel_tool_calls=False)`, cada búsqueda ocurre en su propio ciclo.
 - **Persistencia:** `AsyncSqliteSaver` conserva checkpoints en un archivo SQLite.
 - **Memoria:** una segunda pregunta ambigua recuerda al cliente 102 porque usa el mismo
-`thread_id`.
+  `thread_id`.
+- **Resiliencia:** los timeouts y fallos de conexión se convierten en resultados controlados.
+- **Seguridad de costos:** cada ejecución usa `recursion_limit=10`.
+- **Trazabilidad:** el historial ReAct se guarda como JSON dentro de `traces/`.
 
 ## Material de estudio y revisión
 
@@ -22,9 +26,6 @@ un `thread_id`.
   Tool Calling, ReAct, checkpoints, errores, checklist y glosario.
 - **[Master prompt para Claude Code](MASTER_PROMPT_CLAUDE_CODE.md):** instrucciones completas para
   auditar el código, ejecutar pruebas, puntuar la entrega y corregir únicamente problemas reales.
-- **Resiliencia:** los timeouts y fallos de conexión se convierten en resultados controlados.
-- **Seguridad de costos:** cada ejecución usa `recursion_limit=10`.
-- **Trazabilidad:** el historial ReAct se guarda como JSON dentro de `traces/`.
 
 ## Arquitectura
 
@@ -69,7 +70,9 @@ langgraph-react-agent/
 │   ├── tools.py        # Pydantic, @tool y base simulada
 │   └── tracing.py      # Exportación de la traza ReAct
 ├── tests/
-│   ├── test_graph.py   # Dos ciclos de herramientas + checkpoint
+│   ├── conftest.py     # ScriptedModel: LLM determinista para tests
+│   ├── test_graph.py   # Dos ciclos, memoria, errores y recursion_limit
+│   ├── test_main.py    # Demo completa sin red
 │   └── test_tools.py   # Validación y errores controlados
 ├── traces/
 │   └── example_trace.json
@@ -142,7 +145,9 @@ Al finalizar se crean dos archivos locales:
 - `data/checkpoints.sqlite`: memoria persistente del grafo.
 - `traces/latest_trace.json`: traza real de la última ejecución.
 
-Para comenzar una conversación diferente, cambiá `THREAD_ID`. Para repetir la demostración
+Si volvés a ejecutar con el mismo `THREAD_ID`, el checkpoint acumula el historial, pero la
+consola y `latest_trace.json` muestran solo la ejecución actual. Para comenzar una conversación
+diferente, cambiá `THREAD_ID`. Para repetir la demostración
 desde cero con el mismo identificador, borrá `data/checkpoints.sqlite` con el programa cerrado.
 
 ## Cómo ejecutar las pruebas
@@ -150,10 +155,18 @@ desde cero con el mismo identificador, borrá `data/checkpoints.sqlite` con el p
 ```bash
 pytest -q
 ruff check .
+mypy src/react_agent
 ```
 
-Las pruebas no usan una API key ni consumen tokens. `ScriptedModel` imita únicamente las
-decisiones necesarias para verificar que el grafo recorre dos veces el ciclo de herramientas.
+Las pruebas no usan una API key ni consumen tokens. `ScriptedModel` (en `tests/conftest.py`)
+reemplaza al LLM con decisiones fijas y permite verificar:
+
+- la secuencia exacta `tool_call → observación → tool_call → observación → respuesta`;
+- que la segunda pregunta ambigua se resuelve con el historial recuperado de SQLite, incluso
+  reabriendo la conexión, y que otro `thread_id` no comparte memoria;
+- que `ToolNode` convierte argumentos inválidos en una observación de error;
+- que `recursion_limit` corta un agente que nunca termina;
+- la demo completa de `main.py` ejecutada dos veces, sin filtrar la API key.
 
 ## Las piezas importantes, explicadas para principiantes
 
@@ -161,12 +174,13 @@ decisiones necesarias para verificar que el grafo recorre dos veces el ciclo de 
 
 ```python
 class SearchInput(BaseModel):
-    query: str
-    limit: int
+    query: str = Field(min_length=3, max_length=200, description=...)
+    limit: int = Field(default=1, ge=1, le=3, description=...)
 ```
 
 Este esquema funciona como un control de acceso a la herramienta. Antes de ejecutar la
-búsqueda, Pydantic comprueba que `query` sea texto y que `limit` esté entre 1 y 3.
+búsqueda, Pydantic comprueba que `query` tenga entre 3 y 200 caracteres y que `limit` esté
+entre 1 y 3.
 
 ### 2. La herramienta asíncrona
 
@@ -235,7 +249,7 @@ transforma errores de ejecución de herramientas en mensajes que el agente puede
 ## Trazas
 
 [`traces/example_trace.json`](traces/example_trace.json) muestra el formato incluido en el
-repositorio. Al ejecutar el programa se genera `traces/latest_trace.json` con eventos reales:
+repositorio con el mismo formato que genera `save_trace()`. Al ejecutar el programa se genera `traces/latest_trace.json` con eventos reales:
 
 - `user_input`: mensaje del usuario.
 - `reason_and_tool_call`: decisión estructurada del modelo.
@@ -256,6 +270,8 @@ argumentos, resultados y respuestas, que es lo necesario para auditar el flujo.
 - [x] Persistencia SQLite y sesiones mediante `thread_id`.
 - [x] Invocación asíncrona con `ainvoke`.
 - [x] Prueba multi-paso con dos llamadas de herramienta.
+- [x] Prueba de memoria: segunda pregunta ambigua con el mismo `thread_id`.
+- [x] Errores de herramienta convertidos en observaciones (timeout, conexión, validación).
 - [x] `recursion_limit` para evitar ciclos infinitos.
 - [x] Traza de ejemplo en JSON.
 - [x] API keys excluidas del repositorio.

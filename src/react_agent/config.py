@@ -2,13 +2,17 @@
 
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
+
+
+class ConfigurationError(RuntimeError):
+    """Falta o es inválida una variable de entorno necesaria."""
 
 
 class Settings(BaseModel):
     """Valida toda la configuración que necesita el agente."""
 
-    openai_api_key: str = Field(min_length=1)
+    openai_api_key: SecretStr
     openai_model: str = "gpt-4.1-mini"
     checkpoint_db_path: Path = Path("data/checkpoints.sqlite")
     trace_output_path: Path = Path("traces/latest_trace.json")
@@ -23,12 +27,12 @@ class Settings(BaseModel):
 
         api_key = os.getenv("OPENAI_API_KEY", "").strip()
         if not api_key:
-            raise RuntimeError(
+            raise ConfigurationError(
                 "Falta OPENAI_API_KEY. Copiá .env.example como .env y agregá tu clave."
             )
 
         return cls(
-            openai_api_key=api_key,
+            openai_api_key=SecretStr(api_key),
             openai_model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
             checkpoint_db_path=Path(
                 os.getenv("CHECKPOINT_DB_PATH", "data/checkpoints.sqlite")
