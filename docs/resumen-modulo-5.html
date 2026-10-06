@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Resumen visual del módulo 5 de AI Engineering: LangGraph, Tool Calling, ReAct y checkpoints.">
+  <title>Módulo 5 | Agentes con LangGraph</title>
+  <style>
+    :root {
+      --ink: #24100b;
+      --brown: #34120b;
+      --cream: #fff8ef;
+      --paper: #fffcf8;
+      --orange: #ff5a2a;
+      --orange-2: #ff7a1a;
+      --yellow: #ffbe32;
+      --pink: #f94f98;
+      --mint: #c8f0df;
+      --blue: #dcecf7;
+      --muted: #6c5a53;
+      --line: #eadbd1;
+      --success: #176b48;
+      --danger: #a22b2b;
+      --shadow: 0 18px 50px rgba(70, 26, 11, .10);
+      --radius: 24px;
+      --max: 1180px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% -5%, rgba(255, 190, 50, .24), transparent 34rem),
+        var(--cream);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.65;
+    }
+
+    a { color: inherit; }
+    code, pre { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+    code {
+      padding: .12rem .34rem;
+      border-radius: .35rem;
+      background: #f3e8df;
+      font-size: .92em;
+    }
+    pre {
+      overflow: auto;
+      margin: 1rem 0 0;
+      padding: 1.1rem 1.2rem;
+      color: #fff8ef;
+      background: var(--brown);
+      border-radius: 16px;
+      font-size: .86rem;
+      line-height: 1.55;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+    pre code { padding: 0; color: inherit; background: none; }
+
+    .skip-link {
+      position: fixed;
+      z-index: 100;
+      top: 12px;
+      left: 12px;
+      padding: .65rem 1rem;
+      color: white;
+      background: var(--brown);
+      border-radius: 8px;
+      transform: translateY(-180%);
+    }
+    .skip-link:focus { transform: translateY(0); }
+
+    .progress {
+      position: fixed;
+      z-index: 50;
+      inset: 0 auto auto 0;
+      width: 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--pink), var(--orange), var(--yellow));
+    }
+
+    .topbar {
+      position: sticky;
+      z-index: 30;
+      top: 0;
+      border-bottom: 1px solid rgba(52, 18, 11, .08);
+      background: rgba(255, 248, 239, .90);
+      backdrop-filter: blur(14px);
+    }
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      max-width: var(--max);
+      min-height: 66px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      font-weight: 900;
+      letter-spacing: -.03em;
+      text-decoration: none;
+    }
+    .brand-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      color: white;
+      background: var(--orange);
+      border-radius: 10px;
+      transform: rotate(-5deg);
+    }
+    .topnav { display: flex; gap: .35rem; }
+    .topnav a {
+      padding: .45rem .7rem;
+      color: var(--muted);
+      border-radius: 999px;
+      font-size: .88rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .topnav a:hover, .topnav a:focus-visible { color: var(--ink); background: white; }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 680px;
+      color: white;
+      background:
+        radial-gradient(circle at 75% 30%, rgba(255, 213, 77, .95) 0 9%, transparent 30%),
+        linear-gradient(135deg, #ff3f50 0%, var(--orange) 38%, var(--orange-2) 64%, #ffc34a 100%);
+    }
+    .hero::after {
+      position: absolute;
+      right: -110px;
+      bottom: -150px;
+      width: 470px;
+      height: 470px;
+      content: "";
+      border: 80px solid rgba(62, 16, 8, .90);
+      border-radius: 50%;
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 110px 24px 96px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+      margin: 0 0 1.3rem;
+      padding: .45rem .8rem;
+      color: var(--brown);
+      background: rgba(255,255,255,.78);
+      border-radius: 999px;
+      font-size: .78rem;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      max-width: 900px;
+      margin: 0;
+      font-size: clamp(3.5rem, 10vw, 8.5rem);
+      line-height: .88;
+      letter-spacing: -.08em;
+    }
+    .hero h1 span { display: block; color: var(--brown); }
+    .hero-lede {
+      max-width: 740px;
+      margin: 2rem 0 0;
+      font-size: clamp(1.15rem, 2.1vw, 1.55rem);
+      font-weight: 650;
+      line-height: 1.45;
+    }
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .65rem;
+      margin-top: 2rem;
+    }
+    .hero-tags span {
+      padding: .5rem .8rem;
+      border: 1px solid rgba(255,255,255,.4);
+      border-radius: 999px;
+      background: rgba(52,18,11,.13);
+      font-size: .85rem;
+      font-weight: 800;
+    }
+
+    main { overflow: hidden; }
+    .section {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 90px 24px;
+      scroll-margin-top: 70px;
+    }
+    .section-kicker {
+      margin: 0 0 .5rem;
+      color: var(--orange);
+      font-size: .78rem;
+      font-weight: 950;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .section h2 {
+      max-width: 880px;
+      margin: 0;
+      font-size: clamp(2.35rem, 6vw, 5.3rem);
+      line-height: .98;
+      letter-spacing: -.065em;
+    }
+    .section-intro {
+      max-width: 760px;
+      margin: 1.25rem 0 2.4rem;
+      color: var(--muted);
+      font-size: 1.14rem;
+    }
+    .highlight { background: linear-gradient(transparent 62%, var(--yellow) 0); }
+
+    .grid { display: grid; gap: 18px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card {
+      padding: 1.5rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .card h3 { margin: 0 0 .55rem; font-size: 1.22rem; letter-spacing: -.025em; }
+    .card p { margin: 0; color: var(--muted); }
+    .card .number {
+      display: inline-block;
+      margin-bottom: 1rem;
+      color: var(--orange);
+      font-size: 2.1rem;
+      font-weight: 950;
+      line-height: 1;
+    }
+    .tone-orange { background: #fff0e8; }
+    .tone-pink { background: #ffe8f2; }
+    .tone-yellow { background: #fff3cb; }
+    .tone-mint { background: #eaf9f2; }
+    .tone-blue { background: #edf7fd; }
+    .tone-dark { color: white; background: var(--brown); border-color: var(--brown); }
+    .tone-dark p, .tone-dark li { color: #eadbd1; }
+
+    .route { counter-reset: route; }
+    .route .card { position: relative; min-height: 230px; }
+    .route .card::after {
+      position: absolute;
+      top: 30px;
+      right: 26px;
+      counter-increment: route;
+      content: "0" counter(route);
+      color: rgba(52,18,11,.12);
+      font-size: 4rem;
+      font-weight: 950;
+      line-height: 1;
+    }
+
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: stretch;
+      gap: 18px;
+    }
+    .compare-arrow { display: grid; place-items: center; color: var(--orange); font-size: 2rem; font-weight: 950; }
+    .flow-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .55rem;
+      margin-top: 1.3rem;
+    }
+    .flow-node {
+      padding: .55rem .75rem;
+      border: 2px solid currentColor;
+      border-radius: 10px;
+      font-size: .84rem;
+      font-weight: 850;
+    }
+    .flow-arrow { color: var(--orange); font-weight: 950; }
+
+    .diagram {
+      margin-top: 2rem;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      box-shadow: var(--shadow);
+    }
+    .diagram svg { display: block; width: 100%; height: auto; }
+    .diagram text { font-family: inherit; }
+
+    .callout {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1rem;
+      margin: 1.5rem 0;
+      padding: 1.25rem 1.4rem;
+      border-left: 7px solid var(--orange);
+      border-radius: 0 18px 18px 0;
+      background: white;
+      box-shadow: var(--shadow);
+    }
+    .callout-icon { font-size: 1.7rem; }
+    .callout strong { display: block; margin-bottom: .25rem; }
+    .callout p { margin: 0; color: var(--muted); }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      margin: .18rem;
+      padding: .3rem .62rem;
+      border-radius: 999px;
+      color: var(--brown);
+      background: var(--yellow);
+      font-size: .78rem;
+      font-weight: 850;
+    }
+
+    .steps { display: grid; gap: 12px; }
+    .step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 1rem;
+      align-items: start;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--paper);
+    }
+    .step-index {
+      display: grid;
+      width: 48px;
+      height: 48px;
+      place-items: center;
+      color: white;
+      background: var(--orange);
+      border-radius: 14px;
+      font-weight: 950;
+    }
+    .step h3 { margin: .1rem 0 .3rem; font-size: 1.02rem; }
+    .step p { margin: 0; color: var(--muted); }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 20px; background: white; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: .9rem 1rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+    th { color: white; background: var(--brown); font-size: .82rem; letter-spacing: .04em; }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:nth-child(even) { background: #fff8f1; }
+
+    .status { font-weight: 900; }
+    .ok { color: var(--success); }
+    .warn { color: #8a5700; }
+
+    .file-tree {
+      display: grid;
+      gap: .55rem;
+      margin-top: 1.2rem;
+    }
+    .file-row {
+      display: grid;
+      grid-template-columns: minmax(180px, .75fr) 1.25fr;
+      gap: 1rem;
+      padding: .75rem .9rem;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+    }
+    .file-row code { color: var(--yellow); background: transparent; font-weight: 800; }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: white;
+    }
+    details + details { margin-top: .7rem; }
+    summary { padding: 1rem 1.1rem; cursor: pointer; font-weight: 850; }
+    details p, details ul { margin: 0; padding: 0 1.1rem 1.1rem; color: var(--muted); }
+
+    .score {
+      display: grid;
+      grid-template-columns: 30fr 35fr 35fr;
+      gap: 4px;
+      overflow: hidden;
+      margin: 1.5rem 0;
+      color: var(--brown);
+      border-radius: 18px;
+    }
+    .score div { min-height: 120px; padding: 1rem; font-weight: 800; }
+    .score strong { display: block; font-size: 2rem; }
+
+    .glossary { columns: 3 250px; column-gap: 18px; }
+    .term {
+      break-inside: avoid;
+      margin: 0 0 18px;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: white;
+    }
+    .term dt { font-weight: 950; }
+    .term dd { margin: .3rem 0 0; color: var(--muted); }
+
+    .final-banner {
+      margin-top: 2rem;
+      padding: clamp(2rem, 6vw, 4.5rem);
+      color: white;
+      background: linear-gradient(120deg, var(--brown), #5a1d10);
+      border-radius: 32px;
+      box-shadow: var(--shadow);
+    }
+    .final-banner h3 { margin: 0; font-size: clamp(2rem, 5vw, 4.4rem); line-height: 1; letter-spacing: -.05em; }
+    .final-banner p { max-width: 720px; margin-bottom: 0; color: #f2dacf; font-size: 1.08rem; }
+
+    footer {
+      padding: 36px 24px 60px;
+      color: var(--muted);
+      text-align: center;
+      font-size: .86rem;
+    }
+
+    @media (max-width: 900px) {
+      .topnav { display: none; }
+      .grid-4, .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .compare { grid-template-columns: 1fr; }
+      .compare-arrow { transform: rotate(90deg); }
+      .hero { min-height: 600px; }
+      .hero::after { opacity: .3; }
+      .score { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .section { padding: 66px 18px; }
+      .hero-inner { padding: 80px 18px 74px; }
+      .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .route .card { min-height: auto; }
+      .file-row { grid-template-columns: 1fr; gap: .25rem; }
+      th, td { padding: .72rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+
+    @media print {
+      .topbar, .progress, .skip-link { display: none; }
+      body { background: white; color: black; }
+      .hero { min-height: auto; color: black; background: white; border-bottom: 4px solid black; }
+      .hero::after { display: none; }
+      .hero h1 span, .section-kicker { color: black; }
+      .section { padding: 36px 0; break-inside: avoid; }
+      .card, .diagram, .callout, .final-banner { color: black; background: white; box-shadow: none; break-inside: avoid; }
+      .tone-dark p, .tone-dark li, .final-banner p { color: #333; }
+      pre { white-space: pre-wrap; color: black; background: #f3f3f3; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#inicio"><span class="brand-mark">5</span> AI Engineering</a>
+      <nav class="topnav" aria-label="Navegación del resumen">
+        <a href="#grafos">Grafos</a>
+        <a href="#tools">Tools</a>
+        <a href="#react">ReAct</a>
+        <a href="#persistencia">Memoria</a>
+        <a href="#entrega">Entrega</a>
+        <a href="#glosario">Glosario</a>
+      </nav>
+    </div>
+  </header>
+
+  <header class="hero" id="inicio">
+    <div class="hero-inner">
+      <p class="eyebrow">Clase 5 · Resumen integral</p>
+      <h1>Agentes que <span>razonan.</span></h1>
+      <p class="hero-lede">De cadenas lineales a grafos con ciclos, herramientas seguras y memoria persistente usando LangGraph.</p>
+      <div class="hero-tags" aria-label="Temas principales">
+        <span>StateGraph</span><span>MessagesState</span><span>Tool Calling</span>
+        <span>ReAct</span><span>Checkpoints</span><span>SQLite</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="contenido">
+    <section class="section" aria-labelledby="mapa-title">
+      <p class="section-kicker">Mapa del módulo</p>
+      <h2 id="mapa-title">Cuatro ideas que se <span class="highlight">conectan</span></h2>
+      <p class="section-intro">El módulo no trata de “hacer un chatbot”. Trata de diseñar un sistema que pueda decidir, actuar, observar y continuar sin perder el estado.</p>
+      <div class="grid grid-4 route">
+        <article class="card tone-orange"><h3>Arquitectura</h3><p>Estado tipado, nodos pequeños, aristas directas y condicionales.</p></article>
+        <article class="card tone-pink"><h3>Herramientas</h3><p>Contratos validados para que el modelo interactúe con sistemas externos.</p></article>
+        <article class="card tone-yellow"><h3>Razonamiento</h3><p>Ciclo ReAct: pensar, actuar, observar y volver a decidir.</p></article>
+        <article class="card tone-mint"><h3>Persistencia</h3><p>Checkpoints y <code>thread_id</code> para reanudar una sesión.</p></article>
+      </div>
+    </section>
+
+    <section class="section" id="grafos" aria-labelledby="grafos-title">
+      <p class="section-kicker">01 · Arquitectura de grafos</p>
+      <h2 id="grafos-title">Una cadena avanza. Un grafo <span class="highlight">decide</span>.</h2>
+      <p class="section-intro">Las cadenas sirven para secuencias previsibles. Un agente necesita bifurcaciones y ciclos: después de observar un resultado debe elegir si termina, reintenta o escala.</p>
+
+      <div class="compare">
+        <article class="card">
+          <span class="number">A</span>
+          <h3>Cadena lineal</h3>
+          <p>El próximo paso está predeterminado. Es ideal para procesos simples y repetibles.</p>
+          <div class="flow-line" aria-label="Flujo lineal">
+            <span class="flow-node">Input</span><span class="flow-arrow">→</span>
+            <span class="flow-node">Prompt</span><span class="flow-arrow">→</span>
+            <span class="flow-node">LLM</span><span class="flow-arrow">→</span>
+            <span class="flow-node">Output</span>
+          </div>
+        </article>
+        <div class="compare-arrow" aria-hidden="true">→</div>
+        <article class="card tone-yellow">
+          <span class="number">B</span>
+          <h3>Grafo con ciclos</h3>
+          <p>El próximo nodo depende del estado. Puede volver atrás para corregir o buscar más información.</p>
+          <div class="flow-line" aria-label="Flujo cíclico">
+            <span class="flow-node">Agent</span><span class="flow-arrow">⇄</span>
+            <span class="flow-node">Tools</span><span class="flow-arrow">→</span>
+            <span class="flow-node">END</span>
+          </div>
+        </article>
+      </div>
+
+      <div class="grid grid-3" style="margin-top:18px">
+        <article class="card"><span class="number">S</span><h3>Estado</h3><p>Es la memoria compartida que viaja por el grafo. Contiene datos, no conexiones de infraestructura.</p></article>
+        <article class="card"><span class="number">N</span><h3>Nodos</h3><p>Funciones síncronas o async que leen el estado y devuelven una actualización parcial.</p></article>
+        <article class="card"><span class="number">E</span><h3>Aristas</h3><p>Reglas de navegación. Pueden ser fijas o elegir el siguiente nodo según el estado.</p></article>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:18px">
+        <article class="card tone-dark">
+          <h3>Estado tipado y acumulativo</h3>
+          <p><code>MessagesState</code> ya define el historial con el reducer <code>add_messages</code>.</p>
+          <pre><code>from langgraph.graph import MessagesState
+
+class AgentState(MessagesState):
+    """El historial se acumula automáticamente."""
+
+# Un nodo devuelve solo lo nuevo:
+return {"messages": [response]}</code></pre>
+        </article>
+        <article class="card">
+          <h3>¿Qué hace un reducer?</h3>
+          <p>Decide cómo combinar una actualización con el valor anterior. Sin reducer, una lista nueva puede reemplazar a la anterior. Con <code>add_messages</code>, se concatena y se preserva el historial.</p>
+          <div class="callout">
+            <span class="callout-icon" aria-hidden="true">🧠</span>
+            <div><strong>Regla mental</strong><p>El nodo no devuelve “todo el mundo”; devuelve solamente lo que cambió.</p></div>
+          </div>
+        </article>
+      </div>
+
+      <div class="diagram" role="img" aria-label="Grafo de soporte con búsqueda, evaluación, reintento y escalado humano">
+        <svg viewBox="0 0 1040 330" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#34120b"/></marker>
+          </defs>
+          <rect x="25" y="120" width="100" height="62" rx="28" fill="#34120b"/><text x="75" y="158" text-anchor="middle" fill="white" font-weight="800">START</text>
+          <rect x="180" y="105" width="160" height="92" rx="18" fill="#fff0e8" stroke="#ff5a2a" stroke-width="3"/><text x="260" y="145" text-anchor="middle" font-weight="800">Triage</text><text x="260" y="170" text-anchor="middle" font-size="14">clasifica</text>
+          <rect x="405" y="105" width="185" height="92" rx="18" fill="#ffe8f2" stroke="#f94f98" stroke-width="3"/><text x="497" y="145" text-anchor="middle" font-weight="800">Search</text><text x="497" y="170" text-anchor="middle" font-size="14">busca solución</text>
+          <rect x="655" y="105" width="175" height="92" rx="18" fill="#fff3cb" stroke="#ffbe32" stroke-width="3"/><text x="742" y="145" text-anchor="middle" font-weight="800">Evaluator</text><text x="742" y="170" text-anchor="middle" font-size="14">¿sirve?</text>
+          <rect x="900" y="25" width="110" height="62" rx="28" fill="#176b48"/><text x="955" y="63" text-anchor="middle" fill="white" font-weight="800">END</text>
+          <rect x="870" y="235" width="150" height="72" rx="18" fill="#edf7fd" stroke="#4685a8" stroke-width="3"/><text x="945" y="266" text-anchor="middle" font-weight="800">Human</text><text x="945" y="288" text-anchor="middle" font-size="14">3 fallos</text>
+          <g stroke="#34120b" stroke-width="3" fill="none" marker-end="url(#arrow)">
+            <path d="M125 151 H178"/><path d="M340 151 H403"/><path d="M590 151 H653"/><path d="M830 130 Q870 70 898 62"/><path d="M830 175 Q870 245 868 260"/>
+            <path d="M690 197 C650 305 480 305 455 200"/>
+          </g>
+          <text x="861" y="100" font-size="14" font-weight="700">solución útil</text>
+          <text x="790" y="273" font-size="14" font-weight="700">attempts ≥ 3</text>
+          <text x="555" y="296" font-size="14" font-weight="700">retry: falta información</text>
+        </svg>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon" aria-hidden="true">✍️</span>
+        <div><strong>Otro patrón: escritor ↔ crítico</strong><p>El escritor mejora un borrador, el crítico mide calidad y una arista vuelve al escritor hasta alcanzar el umbral. Siempre debe existir un máximo de revisiones.</p></div>
+      </div>
+    </section>
+
+    <section class="section" id="tools" aria-labelledby="tools-title">
+      <p class="section-kicker">02 · Tool Calling seguro</p>
+      <h2 id="tools-title">El modelo pide. Tu aplicación <span class="highlight">ejecuta</span>.</h2>
+      <p class="section-intro">El LLM no corre Python. Produce una solicitud estructurada con el nombre de una herramienta y sus argumentos; el servidor valida, ejecuta y devuelve la observación.</p>
+
+      <div class="grid grid-4">
+        <article class="card tone-orange"><span class="number">1</span><h3>Nombre</h3><p>Identificador estable y único, por ejemplo <code>search_knowledge_base</code>.</p></article>
+        <article class="card tone-pink"><span class="number">2</span><h3>Descripción</h3><p>El docstring explica qué resuelve y cuándo debe usarla el modelo.</p></article>
+        <article class="card tone-yellow"><span class="number">3</span><h3>Entrada</h3><p>Pydantic define tipos, obligatoriedad, límites y significado de los argumentos.</p></article>
+        <article class="card tone-mint"><span class="number">4</span><h3>Salida</h3><p>Una respuesta previsible que el LLM pueda interpretar como observación.</p></article>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:18px">
+        <article class="card tone-dark">
+          <h3>Contrato de entrada</h3>
+          <pre><code>class SearchInput(BaseModel):
+    query: str = Field(
+        min_length=3,
+        max_length=200,
+        description="Dato concreto a buscar",
+    )
+    limit: int = Field(default=1, ge=1, le=3)</code></pre>
+        </article>
+        <article class="card tone-dark">
+          <h3>Herramienta asíncrona</h3>
+          <pre><code>@tool(args_schema=SearchInput)
+async def search_knowledge_base(
+    query: str,
+    limit: int = 1,
+) -> str:
+    """Busca datos internos verificables."""
+    results = await db.similarity_search(query, k=limit)
+    return json.dumps({"results": results})</code></pre>
+        </article>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon" aria-hidden="true">🔐</span>
+        <div><strong>Least Privilege</strong><p>Cada herramienta recibe solo los permisos mínimos. Nunca ejecutes SQL, comandos o código crudo producido por el LLM sin una capa estricta de validación y autorización.</p></div>
+      </div>
+
+      <h3 style="font-size:1.8rem; margin-top:2.6rem">El recorrido de una llamada</h3>
+      <div class="steps">
+        <article class="step"><span class="step-index">R</span><div><h3>Reason</h3><p>El LLM analiza el mensaje y las definiciones de tools. Decide que necesita información externa.</p></div></article>
+        <article class="step"><span class="step-index">A</span><div><h3>Tool call</h3><p>Devuelve una estructura como <code>{name, args, id}</code>. Todavía no se ejecutó nada.</p></div></article>
+        <article class="step"><span class="step-index">E</span><div><h3>Execution</h3><p>La aplicación valida los argumentos y ejecuta la función Python real.</p></div></article>
+        <article class="step"><span class="step-index">O</span><div><h3>Observation</h3><p>El resultado vuelve como <code>ToolMessage</code>. El LLM reevalúa si ya puede responder.</p></div></article>
+      </div>
+    </section>
+
+    <section class="section" id="react" aria-labelledby="react-title">
+      <p class="section-kicker">03 · Ciclo ReAct</p>
+      <h2 id="react-title">Pensar, actuar, observar… <span class="highlight">y repetir</span>.</h2>
+      <p class="section-intro">La autonomía aparece cuando la observación vuelve al agente. El modelo puede dar la respuesta final o producir una nueva llamada de herramienta.</p>
+
+      <div class="diagram" role="img" aria-label="Ciclo ReAct entre agente y herramientas">
+        <svg viewBox="0 0 1040 360" xmlns="http://www.w3.org/2000/svg">
+          <defs><marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#34120b"/></marker></defs>
+          <circle cx="520" cy="180" r="96" fill="#ff5a2a"/><text x="520" y="168" text-anchor="middle" fill="white" font-size="28" font-weight="900">¿Sigo</text><text x="520" y="204" text-anchor="middle" fill="white" font-size="28" font-weight="900">razonando?</text>
+          <rect x="75" y="130" width="180" height="100" rx="22" fill="#ffe8f2" stroke="#f94f98" stroke-width="3"/><text x="165" y="173" text-anchor="middle" font-size="22" font-weight="900">ACT</text><text x="165" y="201" text-anchor="middle">ejecuta la tool</text>
+          <rect x="785" y="130" width="180" height="100" rx="22" fill="#fff3cb" stroke="#ffbe32" stroke-width="3"/><text x="875" y="173" text-anchor="middle" font-size="22" font-weight="900">REASON</text><text x="875" y="201" text-anchor="middle">decide qué hacer</text>
+          <rect x="430" y="282" width="180" height="58" rx="20" fill="#34120b"/><text x="520" y="318" text-anchor="middle" fill="white" font-size="20" font-weight="900">OBSERVE</text>
+          <g stroke="#34120b" stroke-width="4" fill="none" marker-end="url(#arrow2)">
+            <path d="M780 150 Q680 70 600 120"/><path d="M440 120 Q350 70 258 150"/><path d="M165 232 Q250 310 427 310"/><path d="M610 310 Q790 305 870 233"/>
+          </g>
+          <text x="520" y="38" text-anchor="middle" font-size="16" font-weight="800">AIMessage con tool_calls</text>
+          <text x="290" y="284" text-anchor="middle" font-size="16" font-weight="800">ToolMessage</text>
+          <text x="755" y="286" text-anchor="middle" font-size="16" font-weight="800">nueva decisión</text>
+        </svg>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:18px">
+        <article class="card">
+          <h3><code>ToolNode</code></h3>
+          <p>Es el nodo especializado que recibe las solicitudes del LLM, busca la función correspondiente, la ejecuta y convierte la salida en mensajes de herramienta.</p>
+        </article>
+        <article class="card">
+          <h3><code>tools_condition</code></h3>
+          <p>Inspecciona el último mensaje del modelo: si contiene <code>tool_calls</code> va a <code>tools</code>; si no, termina en <code>END</code>.</p>
+        </article>
+      </div>
+
+      <pre><code>workflow.add_node("agent", call_model)
+workflow.add_node("tools", ToolNode(TOOLS, handle_tool_errors=True))
+
+workflow.add_edge(START, "agent")
+workflow.add_conditional_edges(
+    "agent",
+    tools_condition,
+    {"tools": "tools", END: END},
+)
+workflow.add_edge("tools", "agent")  # Esta flecha crea el ciclo.</code></pre>
+
+      <div class="callout">
+        <span class="callout-icon" aria-hidden="true">🛑</span>
+        <div><strong>Todo ciclo necesita un freno</strong><p><code>recursion_limit=10</code> evita que un agente que nunca decide terminar genere costos y llamadas indefinidas.</p></div>
+      </div>
+    </section>
+
+    <section class="section" id="persistencia" aria-labelledby="persistencia-title">
+      <p class="section-kicker">04 · Checkpoints</p>
+      <h2 id="persistencia-title">La memoria que sobrevive al <span class="highlight">reinicio</span>.</h2>
+      <p class="section-intro">Un checkpointer guarda una fotografía del estado después de cada paso. Con el mismo <code>thread_id</code>, LangGraph puede recuperar la conversación y continuar.</p>
+
+      <div class="grid grid-3">
+        <article class="card tone-mint"><span class="number">01</span><h3>Checkpoint</h3><p>Snapshot del estado y del lugar del grafo donde terminó cada superpaso.</p></article>
+        <article class="card tone-blue"><span class="number">02</span><h3>Thread</h3><p>Secuencia de checkpoints agrupada bajo un identificador de sesión.</p></article>
+        <article class="card tone-pink"><span class="number">03</span><h3>Time Travel</h3><p>Permite inspeccionar estados anteriores, depurar o pausar para aprobación humana.</p></article>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:18px">
+        <article class="card tone-dark">
+          <h3>Persistencia asíncrona local</h3>
+          <pre><code>async with AsyncSqliteSaver.from_conn_string(
+    "data/checkpoints.sqlite"
+) as checkpointer:
+    await checkpointer.setup()
+    app = build_graph(model, checkpointer)
+    result = await app.ainvoke(
+        {"messages": [HumanMessage(content=question)]},
+        config={
+            "configurable": {"thread_id": "cliente-102"},
+            "recursion_limit": 10,
+        },
+    )</code></pre>
+        </article>
+        <article class="card">
+          <h3>Mismo ID, misma conversación</h3>
+          <div class="steps" style="margin-top:1rem">
+            <div class="step"><span class="step-index">1</span><div><h3>Primer turno</h3><p>“Buscá los pedidos del cliente 102”.</p></div></div>
+            <div class="step"><span class="step-index">2</span><div><h3>SQLite</h3><p>Guarda mensajes, tool calls y observaciones.</p></div></div>
+            <div class="step"><span class="step-index">3</span><div><h3>Segundo turno</h3><p>“¿Y el último?” El agente recupera que hablábamos del cliente 102.</p></div></div>
+          </div>
+        </article>
+      </div>
+
+      <div class="table-wrap" style="margin-top:18px">
+        <table>
+          <thead><tr><th>Checkpointer</th><th>Uso recomendado</th><th>Persistencia</th><th>Async</th></tr></thead>
+          <tbody>
+            <tr><td><code>MemorySaver</code></td><td>Tests y demos rápidas</td><td>No sobrevive al proceso</td><td>Sí</td></tr>
+            <tr><td><code>SqliteSaver</code></td><td>Desarrollo local síncrono</td><td>Archivo SQLite</td><td>No como ruta principal</td></tr>
+            <tr><td><code>AsyncSqliteSaver</code></td><td>Desarrollo local async</td><td>Archivo SQLite</td><td>Sí</td></tr>
+            <tr><td>PostgreSQL saver</td><td>Producción y concurrencia</td><td>Servidor de base de datos</td><td>Hay variante async</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="entrega" aria-labelledby="entrega-title">
+      <p class="section-kicker">Pre-entrega 5</p>
+      <h2 id="entrega-title">Del concepto al <span class="highlight">repositorio</span>.</h2>
+      <p class="section-intro">La entrega implementa un agente que consulta una base simulada, realiza dos búsquedas para completar la primera respuesta y conserva contexto para una segunda pregunta.</p>
+
+      <div class="card tone-dark">
+        <h3>Mapa del proyecto</h3>
+        <div class="file-tree">
+          <div class="file-row"><code>config.py</code><span>Valida variables de entorno y rutas.</span></div>
+          <div class="file-row"><code>tools.py</code><span>Esquema Pydantic, herramienta async y MockVectorDB.</span></div>
+          <div class="file-row"><code>graph.py</code><span>Estado, prompt, ToolNode, aristas y compilación.</span></div>
+          <div class="file-row"><code>main.py</code><span>Dos interacciones con el mismo thread y SQLite.</span></div>
+          <div class="file-row"><code>tracing.py</code><span>Convierte mensajes observables en una traza JSON.</span></div>
+          <div class="file-row"><code>tests/</code><span>Valida tools, errores, dos ciclos y persistencia sin gastar tokens.</span></div>
+        </div>
+      </div>
+
+      <h3 style="font-size:1.8rem; margin-top:2.6rem">Ejemplo completo de la traza</h3>
+      <div class="steps">
+        <article class="step"><span class="step-index">1</span><div><h3>Usuario</h3><p>“¿Cuántos pedidos tiene el cliente 102 y cuál es el total?”</p></div></article>
+        <article class="step"><span class="step-index">2</span><div><h3>Primera decisión</h3><p>El agente busca la cantidad. La tool devuelve “3 pedidos”.</p></div></article>
+        <article class="step"><span class="step-index">3</span><div><h3>Segunda decisión</h3><p>Observa que todavía falta el total y realiza otra consulta. La tool devuelve “14.500 ARS”.</p></div></article>
+        <article class="step"><span class="step-index">4</span><div><h3>Respuesta final</h3><p>Une ambas observaciones sin inventar datos y cita los fragmentos recuperados.</p></div></article>
+        <article class="step"><span class="step-index">5</span><div><h3>Memoria</h3><p>Con el mismo <code>thread_id</code>, “¿y el último?” se interpreta dentro del contexto del cliente 102.</p></div></article>
+      </div>
+
+      <h3 style="font-size:1.8rem; margin-top:2.6rem">Cómo se evalúa</h3>
+      <div class="score" aria-label="Distribución del puntaje">
+        <div class="tone-orange"><strong>30%</strong>Arquitectura y estado</div>
+        <div class="tone-pink"><strong>35%</strong>Herramientas y razonamiento</div>
+        <div class="tone-yellow"><strong>35%</strong>Persistencia y calidad</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Requisito</th><th>Implementación</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td>StateGraph + MessagesState</td><td><code>graph.py</code></td><td class="status ok">Cumplido</td></tr>
+            <tr><td>Tool propia y Pydantic</td><td><code>SearchInput</code> + <code>@tool</code></td><td class="status ok">Cumplido</td></tr>
+            <tr><td>Ciclo autónomo</td><td><code>tools_condition</code> y retorno a agent</td><td class="status ok">Cumplido</td></tr>
+            <tr><td>Persistencia SQLite</td><td><code>AsyncSqliteSaver</code> + <code>thread_id</code></td><td class="status ok">Cumplido</td></tr>
+            <tr><td>Multi-paso</td><td>Test determinista con 2 tool calls</td><td class="status ok">Cumplido</td></tr>
+            <tr><td>Traza</td><td>Ejemplo versionado + generación real al ejecutar</td><td class="status ok">Cumplido</td></tr>
+            <tr><td>API real</td><td>Requiere completar <code>.env</code></td><td class="status warn">Acción del usuario</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="errores" aria-labelledby="errores-title">
+      <p class="section-kicker">Antes de entregar</p>
+      <h2 id="errores-title">Errores que parecen pequeños y <span class="highlight">rompen agentes</span>.</h2>
+      <p class="section-intro">En agentes, la confiabilidad depende tanto de los límites como de la inteligencia del modelo.</p>
+
+      <div class="grid grid-2">
+        <article class="card"><h3>Estado sobrecargado</h3><p>No guardes clientes de DB, sockets o modelos dentro del State. Guardá solamente datos que deban viajar o persistir.</p></article>
+        <article class="card"><h3>Nodos gigantes</h3><p>Separá llamada al modelo, ejecución de tools y lógica de negocio. La granularidad permite testear y enrutar.</p></article>
+        <article class="card"><h3>Docstring vago</h3><p>“Busca datos” no alcanza. Describí fuente, alcance, cuándo usarla y qué no debe inventar.</p></article>
+        <article class="card"><h3>Sin reducer</h3><p>Una actualización puede borrar el historial. Para chat usá <code>MessagesState</code> o <code>add_messages</code>.</p></article>
+        <article class="card"><h3>Bucle infinito</h3><p>Definí <code>recursion_limit</code> y una política de reintentos. Un ciclo sin salida cuesta dinero.</p></article>
+        <article class="card"><h3>Error sin observar</h3><p>Convertí timeouts y fallos previsibles en resultados controlados que el agente pueda interpretar.</p></article>
+        <article class="card"><h3>Estado sucio</h3><p>El historial crece. En sistemas largos necesitás resumir, recortar o separar memoria de corto y largo plazo.</p></article>
+        <article class="card"><h3>Secretos en Git</h3><p>La API key vive en <code>.env</code>, que debe estar ignorado. El repo solo incluye <code>.env.example</code>.</p></article>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon" aria-hidden="true">🧪</span>
+        <div><strong>Probá también el camino de fallo</strong><p>No alcanza con el “happy path”. Simulá un timeout, comprobá que el proceso no se caiga y que el resultado pueda volver al agente.</p></div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="repaso-title">
+      <p class="section-kicker">Autoevaluación</p>
+      <h2 id="repaso-title">Si podés explicar esto, <span class="highlight">entendiste</span>.</h2>
+      <p class="section-intro">Abrí cada pregunta después de responderla mentalmente.</p>
+      <details><summary>¿Cuál es la diferencia entre invocar y ejecutar una herramienta?</summary><p>El LLM invoca: produce nombre y argumentos. La aplicación ejecuta: valida y llama a la función real.</p></details>
+      <details><summary>¿Qué flecha convierte el flujo en un ciclo ReAct?</summary><p>La arista que vuelve de <code>tools</code> a <code>agent</code>. Sin ella, el modelo no puede observar y reconsiderar.</p></details>
+      <details><summary>¿Por qué <code>thread_id</code> no es lo mismo que historial en memoria?</summary><p>El ID identifica una secuencia persistida de checkpoints. Una lista en RAM desaparece cuando termina el proceso.</p></details>
+      <details><summary>¿Quién decide si el grafo termina?</summary><p>El LLM, al devolver una respuesta sin <code>tool_calls</code>. <code>tools_condition</code> interpreta esa salida y enruta a <code>END</code>.</p></details>
+      <details><summary>¿Por qué el test usa un modelo simulado?</summary><p>Para comprobar de manera determinista dos ciclos, sin depender de una API, gastar tokens o confiar en una decisión probabilística.</p></details>
+    </section>
+
+    <section class="section" id="glosario" aria-labelledby="glosario-title">
+      <p class="section-kicker">Glosario esencial</p>
+      <h2 id="glosario-title">El vocabulario del <span class="highlight">arquitecto</span>.</h2>
+      <p class="section-intro">Definiciones breves para repasar antes de defender la entrega.</p>
+      <dl class="glossary">
+        <div class="term"><dt>LangGraph</dt><dd>Framework para construir flujos con estado, bifurcaciones y ciclos.</dd></div>
+        <div class="term"><dt>StateGraph</dt><dd>Constructor donde se registran esquema, nodos y aristas.</dd></div>
+        <div class="term"><dt>MessagesState</dt><dd>Estado predefinido con historial acumulativo de mensajes.</dd></div>
+        <div class="term"><dt>Reducer</dt><dd>Función que combina una actualización con el estado anterior.</dd></div>
+        <div class="term"><dt>Nodo</dt><dd>Unidad de trabajo que lee estado y devuelve cambios parciales.</dd></div>
+        <div class="term"><dt>Arista condicional</dt><dd>Conexión cuyo destino se elige usando el estado actual.</dd></div>
+        <div class="term"><dt>START / END</dt><dd>Puntos especiales de entrada y finalización válida.</dd></div>
+        <div class="term"><dt>Tool Calling</dt><dd>Solicitud estructurada del LLM para usar una función externa.</dd></div>
+        <div class="term"><dt>ToolNode</dt><dd>Nodo que ejecuta las herramientas solicitadas.</dd></div>
+        <div class="term"><dt>tools_condition</dt><dd>Router que detecta tool calls o finalización.</dd></div>
+        <div class="term"><dt>bind_tools</dt><dd>Método que expone contratos de herramientas al modelo.</dd></div>
+        <div class="term"><dt>ReAct</dt><dd>Patrón iterativo de razonamiento, acción y observación.</dd></div>
+        <div class="term"><dt>Checkpointer</dt><dd>Componente que persiste snapshots del estado del grafo.</dd></div>
+        <div class="term"><dt>thread_id</dt><dd>Identificador que agrupa checkpoints de una sesión.</dd></div>
+        <div class="term"><dt>Time Travel</dt><dd>Inspección o reanudación desde estados anteriores.</dd></div>
+        <div class="term"><dt>Least Privilege</dt><dd>Principio de conceder solo los permisos indispensables.</dd></div>
+      </dl>
+
+      <div class="final-banner">
+        <h3>Estado + decisiones + memoria.</h3>
+        <p>Ese es el salto de una cadena que procesa a un agente que puede actuar, aprender de cada observación y continuar una tarea compleja de forma controlada.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Resumen de estudio basado en el material de la Clase 5 y en la implementación de la Pre-entrega 5. Documento autocontenido y disponible sin conexión.
+  </footer>
+
+  <script>
+    const progress = document.getElementById("progress");
+    const updateProgress = () => {
+      const available = document.documentElement.scrollHeight - window.innerHeight;
+      const percent = available > 0 ? (window.scrollY / available) * 100 : 0;
+      progress.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+    };
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    updateProgress();
+  </script>
+</body>
+</html>

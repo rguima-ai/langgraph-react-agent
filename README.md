@@ -14,7 +14,14 @@ un `thread_id`.
 - **Razonamiento multi-paso:** la primera pregunta necesita dos búsquedas independientes.
 - **Persistencia:** `AsyncSqliteSaver` conserva checkpoints en un archivo SQLite.
 - **Memoria:** una segunda pregunta ambigua recuerda al cliente 102 porque usa el mismo
-  `thread_id`.
+`thread_id`.
+
+## Material de estudio y revisión
+
+- **[Resumen visual del módulo 5](docs/resumen-modulo-5.html):** HTML autocontenido con grafos,
+  Tool Calling, ReAct, checkpoints, errores, checklist y glosario.
+- **[Master prompt para Claude Code](MASTER_PROMPT_CLAUDE_CODE.md):** instrucciones completas para
+  auditar el código, ejecutar pruebas, puntuar la entrega y corregir únicamente problemas reales.
 - **Resiliencia:** los timeouts y fallos de conexión se convierten en resultados controlados.
 - **Seguridad de costos:** cada ejecución usa `recursion_limit=10`.
 - **Trazabilidad:** el historial ReAct se guarda como JSON dentro de `traces/`.
@@ -66,6 +73,9 @@ langgraph-react-agent/
 │   └── test_tools.py   # Validación y errores controlados
 ├── traces/
 │   └── example_trace.json
+├── docs/
+│   └── resumen-modulo-5.html
+├── MASTER_PROMPT_CLAUDE_CODE.md
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml
